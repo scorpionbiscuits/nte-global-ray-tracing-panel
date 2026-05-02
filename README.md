@@ -1,4 +1,4 @@
-### RTX Fix for NTEGlobal
+# RTX Fix for NTEGlobal
 This is a fork of nte-ray-tracing-panel originally by which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested on NVIDIA RTX 4060.
 
 # How to Enable Ray Tracing in NTE: One-Click Ray Tracing Unlock / Deployment Tool
