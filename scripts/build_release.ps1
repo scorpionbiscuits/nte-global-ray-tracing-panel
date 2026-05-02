@@ -12,13 +12,14 @@ python -m pip install -r requirements.txt
 $pyArgs = @(
     '-m', 'PyInstaller',
     '--noconsole',
+    '--uac-admin',
     '--name', 'NTERayTracingPanel',
     '--add-data', 'web;web',
     'app.py'
 )
 
 if ($OneFile) {
-    $pyArgs = @('-m', 'PyInstaller', '--noconsole', '--onefile', '--name', 'NTERayTracingPanel', '--add-data', 'web;web', 'app.py')
+    $pyArgs = @('-m', 'PyInstaller', '--noconsole', '--uac-admin', '--onefile', '--name', 'NTERayTracingPanel', '--add-data', 'web;web', 'app.py')
 }
 
 python @pyArgs
