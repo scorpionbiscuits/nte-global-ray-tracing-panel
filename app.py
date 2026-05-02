@@ -25,66 +25,24 @@ APP_CN_NAME = "异环光追解锁面板"
 APP_FULL_CN_NAME = "异环光线追踪 / 全景光追一键解锁工具"
 APP_EN_NAME = "NTE Ray Tracing Panel"
 APP_SEARCH_KEYWORDS = [
-    "异环怎么开光追",
-    "异环光追怎么开",
-    "异环全景光追怎么开",
-    "异环没有光追选项",
-    "异环光追打不开",
-    "异环光追开不了",
     "异环光追解锁",
-    "异环光追一键开启",
-    "异环光追一键部署",
-    "异环光追一键安装",
-    "异环开光追工具",
-    "异环光追工具",
-    "异环光追补丁",
-    "异环光线追踪怎么开",
-    "异环光线追踪开启",
+    "异环光线追踪一键",
     "异环全景光追",
-    "异环全景光追开启",
     "异环光追开启",
-    "异环光追选项不显示",
-    "异环光追灰色",
-    "异环 5060 没有光追",
-    "异环 4060 没有光追",
-    "异环 RTX 5060 怎么开光追",
-    "异环 RTX 4060 怎么开光追",
     "异环 RTX 5060 开光追",
-    "异环 RTX 4060 开光追",
     "异环显卡伪装",
-    "异环 不改注册表 光追",
-    "异环 winmm.dll 光追",
-    "异环 winmm.dll 一键安装",
-    "异环 HTGame.exe 光追",
     "异环 OptiScaler",
-    "异环 OptiScaler 一键安装",
     "异环 RTX 4090 spoof",
     "异环 RTX 5080M spoof",
-    "NTE how to enable ray tracing",
-    "how to enable ray tracing in NTE",
-    "NTE no ray tracing option",
-    "NTE ray tracing fix",
-    "NTE ray tracing tool",
-    "NTE one-click ray tracing unlock",
-    "NTE one-click OptiScaler install",
     "NTE ray tracing unlock",
     "Neverness To Everness ray tracing",
-    "Neverness To Everness ray tracing unlock",
-    "Neverness To Everness how to enable ray tracing",
-    "Neverness To Everness no ray tracing option",
-    "NTE ray tracing option missing",
-    "NTE ray tracing not showing",
-    "NTE GPU spoof",
-    "NTE OptiScaler DXGI spoof",
-    "Ananta how to enable ray tracing",
-    "Ananta no ray tracing option",
     "Ananta path tracing",
-    "Ananta ray tracing unlock",
 ]
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 22642
 GITHUB_RELEASE_API = "https://api.github.com/repos/optiscaler/OptiScaler/releases/latest"
-GAME_EXE = "HTGame.exe"
+GAME_EXE = "HTGame.exe"  # Chinese / beta client
+GAME_EXE_CANDIDATES = ("HTGame.exe", "NTEGame.exe", "NTEGlobalGame.exe")  # NTEGlobalGame.exe = global PC release
 
 RUN_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", RUN_DIR))
@@ -151,6 +109,42 @@ def safe_log(message: str, *, error: bool = False) -> None:
         pass
 
 
+def open_browser_safe(url: str) -> None:
+    """
+    Open a URL without elevation. webbrowser.open() raises WinError 5 when the
+    calling process is elevated (admin) because Windows blocks spawning
+    low-integrity processes (browsers) from high-integrity parents.
+    Launching via explorer.exe de-escalates the open — it is the standard fix.
+    """
+    try:
+        subprocess.Popen(["explorer.exe", url])
+        return
+    except Exception:
+        pass
+    try:
+        webbrowser.open(url)
+        return
+    except Exception:
+        pass
+    safe_log(f"Auto-open browser failed (running as admin?). Open manually: {url}")
+
+
+def raise_if_access_denied(exc: OSError, path: str = "") -> None:
+    """Re-raise OSError with an actionable message when it is WinError 5."""
+    if getattr(exc, "winerror", None) == 5:
+        loc = f"\n路径: {path}" if path else ""
+        raise AppError(
+            f"写入被拒绝 (WinError 5 Access Denied)。{loc}\n\n"
+            "常见原因及解决方法：\n"
+            "① Windows Defender 实时保护拦截了 winmm.dll 写入 —— "
+            "请在 Windows 安全中心 → 病毒和威胁防护 → 排除项 中添加游戏 Win64 目录，然后重试；\n"
+            "② 游戏安装在 C:\\Program Files 内且 UAC 令牌未完全提权 —— "
+            "请右键以管理员身份运行本工具，或将游戏迁移到 Program Files 以外的目录（如 D:\\Games）。",
+            500,
+        ) from exc
+    raise exc
+
+
 def now_id() -> str:
     stamp = datetime.now()
     return stamp.strftime("%Y%m%d-%H%M%S") + f"-{stamp.microsecond // 1000:03d}"
@@ -196,7 +190,7 @@ def run_powershell(script: str, *, timeout: int = 15) -> str:
 def running_processes() -> list[dict]:
     try:
         text = run_powershell(
-            "Get-Process HTGame,NTEGame,NTEBrowser,NTEWebBooster -ErrorAction SilentlyContinue | "
+            "Get-Process HTGame,NTEGame,NTEBrowser,NTEWebBooster,NTEGlobalGame,NTEGlobalLauncher,NTEGlobalBrowser,NTEGlobalWebBooster -ErrorAction SilentlyContinue | "
             "Select-Object ProcessName,Id,Path | ConvertTo-Json -Compress",
             timeout=8,
         )
@@ -218,7 +212,7 @@ def close_game_processes() -> list[dict]:
     if not before:
         return []
     run_powershell(
-        "Get-Process HTGame,NTEGame,NTEBrowser,NTEWebBooster -ErrorAction SilentlyContinue | Stop-Process -Force",
+        "Get-Process HTGame,NTEGame,NTEBrowser,NTEWebBooster,NTEGlobalGame,NTEGlobalLauncher,NTEGlobalBrowser,NTEGlobalWebBooster -ErrorAction SilentlyContinue | Stop-Process -Force",
         timeout=15,
     )
     time.sleep(1.5)
@@ -320,12 +314,17 @@ def expand_user_path(value: str | None) -> Path:
 
 
 def likely_game_paths(base: Path) -> list[Path]:
+    subdirs = [
+        Path("."),
+        Path("Client") / "WindowsNoEditor" / "HT" / "Binaries" / "Win64",
+        Path("WindowsNoEditor") / "HT" / "Binaries" / "Win64",
+        Path("HT") / "Binaries" / "Win64",
+        Path("Binaries") / "Win64",
+    ]
     return [
-        base / GAME_EXE,
-        base / "Client" / "WindowsNoEditor" / "HT" / "Binaries" / "Win64" / GAME_EXE,
-        base / "WindowsNoEditor" / "HT" / "Binaries" / "Win64" / GAME_EXE,
-        base / "HT" / "Binaries" / "Win64" / GAME_EXE,
-        base / "Binaries" / "Win64" / GAME_EXE,
+        base / subdir / exe
+        for subdir in subdirs
+        for exe in GAME_EXE_CANDIDATES
     ]
 
 
@@ -334,11 +333,13 @@ def limited_find_game(base: Path, limit: int = 160000) -> Path | None:
         return None
     skipped = {"$RECYCLE.BIN", "System Volume Information", "Saved", "Logs", "UserData", "cef_cache_0"}
     checked = 0
+    exe_set = {e.lower() for e in GAME_EXE_CANDIDATES}
     for root, dirs, files in os.walk(base):
         dirs[:] = [d for d in dirs if d not in skipped and not d.startswith(".")]
         checked += len(files)
-        if GAME_EXE in files:
-            return Path(root) / GAME_EXE
+        for f in files:
+            if f.lower() in exe_set:
+                return Path(root) / f
         if checked > limit:
             break
     return None
@@ -350,8 +351,8 @@ def detect_game(path_value: str | None) -> dict:
         raise AppError("路径不存在。")
     exe: Path | None = None
     if base.is_file():
-        if base.name.lower() != GAME_EXE.lower():
-            raise AppError("请选择异环安装根目录、Win64 文件夹，或 HTGame.exe。")
+        if base.name.lower() not in {e.lower() for e in GAME_EXE_CANDIDATES}:
+            raise AppError("请选择异环安装根目录、Win64 文件夹，或游戏主程序 (HTGame.exe / NTEGame.exe)。")
         exe = base
     else:
         for candidate in likely_game_paths(base):
@@ -361,11 +362,12 @@ def detect_game(path_value: str | None) -> dict:
         if exe is None:
             exe = limited_find_game(base)
     if exe is None:
-        raise AppError("没有找到 HTGame.exe。")
+        raise AppError("没有找到游戏主程序 (HTGame.exe 或 NTEGame.exe)。")
     win64 = exe.parent
     return {
         "input": str(base),
         "exe": str(exe),
+        "exeName": exe.name,
         "win64": str(win64),
         "install": inspect_install(win64),
         "backups": list_backups(win64),
@@ -376,7 +378,15 @@ def common_game_candidates() -> list[Path]:
     candidates = []
     if os.environ.get("NTE_GAME_PATH"):
         candidates.append(Path(os.environ["NTE_GAME_PATH"]))
-    candidates.extend(Path(f"{drive}:\\Neverness To Everness") for drive in "CDEFGHIJKLMNOPQRSTUVWXYZ")
+    for drive in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+        for base in (
+            f"{drive}:\\Neverness To Everness",
+            f"{drive}:\\Program Files\\Neverness To Everness",
+            f"{drive}:\\Program Files (x86)\\Neverness To Everness",
+        ):
+            p = Path(base)
+            candidates.append(p)
+            candidates.append(p / "NTEGlobal")  # global PC launcher installs here
     return candidates
 
 
@@ -395,7 +405,7 @@ def run_folder_dialog() -> str | None:
 Add-Type -AssemblyName System.Windows.Forms
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = '选择异环安装根目录，或选择包含 HTGame.exe 的 Win64 文件夹'
+$dialog.Description = '选择异环安装根目录，或选择包含 HTGame.exe / NTEGame.exe 的 Win64 文件夹'
 $dialog.ShowNewFolderButton = $false
 $form = New-Object System.Windows.Forms.Form
 $form.TopMost = $true
@@ -631,7 +641,7 @@ def set_ini_value(lines: list[str], key: str, value: str) -> list[str]:
     return out
 
 
-def build_optiscaler_config(template: Path, *, mode: str, target_device_id: str | None, profile: dict) -> str:
+def build_optiscaler_config(template: Path, *, mode: str, target_device_id: str | None, profile: dict, exe_name: str = GAME_EXE) -> str:
     lines = template.read_text(encoding="utf-8", errors="replace").splitlines()
     values = {
         "SpoofedVendorId": profile["vendorId"],
@@ -647,7 +657,7 @@ def build_optiscaler_config(template: Path, *, mode: str, target_device_id: str 
         "Registry": "true" if mode == "full" else "false",
         "User32": "true" if mode == "full" else "false",
         "UseFakenvapi": "true" if mode == "full" else "false",
-        "TargetProcessName": GAME_EXE,
+        "TargetProcessName": exe_name,
         "LogToFile": "true",
         "LogLevel": "0",
         "SingleFile": "true",
@@ -664,19 +674,31 @@ def copy_optiscaler_payload(stage: dict, game_dir: Path) -> None:
     dll = Path(stage["dll"])
     ini = Path(stage["ini"])
     release_root = dll.parent
-    shutil.copy2(dll, game_dir / "winmm.dll")
+    try:
+        shutil.copy2(dll, game_dir / "winmm.dll")
+    except OSError as exc:
+        raise_if_access_denied(exc, str(game_dir / "winmm.dll"))
     opt_dir = game_dir / "OptiScaler"
-    if opt_dir.exists():
-        shutil.rmtree(opt_dir)
-    opt_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        if opt_dir.exists():
+            shutil.rmtree(opt_dir)
+        opt_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise_if_access_denied(exc, str(opt_dir))
     for item in release_root.iterdir():
         if item.name in {"OptiScaler.dll", "OptiScaler.ini", "Licenses"}:
             continue
-        if item.is_file() and item.suffix.lower() in {".dll", ".ini"}:
-            shutil.copy2(item, opt_dir / item.name)
-        elif item.is_dir() and item.name == "D3D12_Optiscaler":
-            shutil.copytree(item, opt_dir / item.name)
-    shutil.copy2(ini, opt_dir / "_source_OptiScaler.ini")
+        try:
+            if item.is_file() and item.suffix.lower() in {".dll", ".ini"}:
+                shutil.copy2(item, opt_dir / item.name)
+            elif item.is_dir() and item.name == "D3D12_Optiscaler":
+                shutil.copytree(item, opt_dir / item.name)
+        except OSError as exc:
+            raise_if_access_denied(exc, str(opt_dir / item.name))
+    try:
+        shutil.copy2(ini, opt_dir / "_source_OptiScaler.ini")
+    except OSError as exc:
+        raise_if_access_denied(exc, str(opt_dir / "_source_OptiScaler.ini"))
 
 
 def install_spoof(
@@ -703,7 +725,10 @@ def install_spoof(
     profile = resolve_profile(profile_id, adapters)
 
     backup_dir = win64 / BACKUP_DIR_NAME / now_id()
-    backup_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        backup_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise_if_access_denied(exc, str(backup_dir))
     manifest = {
         "created": datetime.now().isoformat(timespec="seconds"),
         "tool": "nte-ray-tracing-panel",
@@ -725,8 +750,11 @@ def install_spoof(
     copy_optiscaler_payload(stage, win64)
     manifest["operations"].append("写入 winmm.dll OptiScaler 代理")
     manifest["operations"].append("写入 OptiScaler 依赖目录")
-    config = build_optiscaler_config(Path(stage["ini"]), mode=mode, target_device_id=target_device_id, profile=profile)
-    (win64 / "OptiScaler.ini").write_text(config, encoding="ascii", errors="ignore")
+    config = build_optiscaler_config(Path(stage["ini"]), mode=mode, target_device_id=target_device_id, profile=profile, exe_name=detected.get("exeName", GAME_EXE))
+    try:
+        (win64 / "OptiScaler.ini").write_text(config, encoding="ascii", errors="ignore")
+    except OSError as exc:
+        raise_if_access_denied(exc, str(win64 / "OptiScaler.ini"))
     manifest["operations"].append(f"写入 OptiScaler.ini GPU spoof 配置: {profile['label']}")
 
     (backup_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -916,7 +944,7 @@ def main() -> int:
     url = f"http://{args.host}:{args.port}/"
     safe_log(f"NTE Ray Tracing Panel {APP_VERSION} running at {url}")
     if not args.no_browser:
-        threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+        threading.Timer(0.8, lambda: open_browser_safe(url)).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
