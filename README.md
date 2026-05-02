@@ -1,5 +1,5 @@
 # RT Fix for NTE Global
-This is a fork of nte-ray-tracing-panel originally by llg1634 which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested on NVIDIA RTX 4060.
+This is a fork of nte-ray-tracing-panel originally by llg1634 which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested and working on NVIDIA RTX 4060.
 
 ---
 
