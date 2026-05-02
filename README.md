@@ -33,7 +33,7 @@ The focus of this project is not to be a "Generic Mod Manager," but to turn the 
 
 Many RTX 50/40/30 series cards support ray tracing, but the NTE test version hides the "Ray Tracing / Path Tracing" options based on a whitelist. 
 
-This tool uses OptiScaler's DXGI/Streamline GPU spoofing to disguise the GPU name seen by HTGame.exe as a targeted whitelist model. The WebUI currently offers three profiles: Original Configuration, NVIDIA GeForce RTX 4090, and NVIDIA GeForce RTX 5080 Laptop GPU. This method has been verified to unlock the ray tracing settings in-game.
+This tool uses OptiScaler's DXGI/Streamline GPU spoofing to disguise the GPU name seen by `HTGame.exe` or for the global version `NTEGlobalGame.exe` as a targeted whitelist model. The WebUI currently offers three profiles: Original Configuration, NVIDIA GeForce RTX 4090, and NVIDIA GeForce RTX 5080 Laptop GPU. This method has been verified to unlock the ray tracing settings in-game.
 
 ---
 
