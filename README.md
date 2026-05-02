@@ -1,126 +1,121 @@
-# 异环怎么开光追：异环光追一键开启 / 一键部署工具
+### RTX Fix for NTEGlobal
+This is a fork of nte-ray-tracing-panel originally by which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested on NVIDIA RTX 4060.
 
-搜索关键词：异环怎么开光追、异环光追怎么开、异环全景光追怎么开、异环没有光追选项、异环光追选项不显示、异环光追打不开、异环光追开不了、异环 5060 没有光追、异环 4060 没有光追、异环 RTX 5060 怎么开光追、异环 RTX 4060 怎么开光追、异环光追一键开启、异环光追一键安装、异环光追一键部署、异环开光追工具、异环光追补丁、异环 OptiScaler 一键安装、异环 winmm.dll 一键安装、异环不改注册表光追、NTE how to enable ray tracing、NTE no ray tracing option、Neverness To Everness how to enable ray tracing、NTE ray tracing fix、NTE one-click ray tracing unlock。
+# How to Enable Ray Tracing in NTE: One-Click Ray Tracing Unlock / Deployment Tool
 
-`异环光追一键部署面板 / NTE Ray Tracing Panel` 是给“异环怎么开光追”“为什么没有光追选项”这类问题准备的本地 WebUI 工具。它可以一键准备 OptiScaler、安装本地 `winmm.dll` 和 `OptiScaler.ini`，把当前已验证成功的 GPU spoof 流程做成自动写入、可选择目标显卡、可备份、可恢复的一键开启光追流程。
+Search Keywords: How to enable ray tracing in NTE, NTE ray tracing fix, NTE path tracing unlock, NTE ray tracing option missing, NTE ray tracing not showing, NTE ray tracing won't open, NTE RTX 5060 no ray tracing, NTE RTX 4060 ray tracing, NTE one-click ray tracing unlock, NTE one-click install, NTE OptiScaler one-click setup, NTE winmm.dll install, NTE unlock ray tracing without registry edits.
+
+The `NTE Ray Tracing Panel (异环光追一键部署面板)` is a local WebUI tool designed to solve issues like "How to enable ray tracing in NTE" or "Why is the ray tracing option missing?" It automates the preparation of OptiScaler, installs the local `winmm.dll` and `OptiScaler.ini`, and turns the verified GPU spoofing process into an automated, selectable, and reversible one-click workflow.
 
 English README: [README.en.md](README.en.md)
 
 Local URL:
-
-```text
 http://127.0.0.1:22642
-```
 
-它不是在线服务，只在本机运行。本机网页负责显示、选择目录和发起操作；Python / exe 后端负责监听 `127.0.0.1:22642`、下载 OptiScaler、写入文件、备份和恢复。只关闭浏览器标签页不会退出后端服务，需要在面板里点击“退出工具”，或者在任务管理器里结束 `NTERayTracingPanel.exe`。
+Note: This is not an online service; it runs entirely on your local machine. The web page handles the display, directory selection, and execution, while the Python/exe backend handles the server at 127.0.0.1:22642, downloads OptiScaler, writes files, and manages backups. Closing the browser tab will not stop the backend service. You must click "Exit Tool" in the panel or end NTERayTracingPanel.exe via Task Manager.
 
-## 搜索关键词 / Search Keywords
+---
 
-异环怎么开光追，异环光追怎么开，异环全景光追怎么开，异环光线追踪怎么开，异环没有光追选项，异环光追选项不显示，异环光追打不开，异环光追开不了，异环光追灰色，异环 RTX 5060 怎么开光追，异环 RTX 4060 怎么开光追，异环 5060 没有光追，异环 4060 没有光追，异环光追一键开启，异环光追一键安装，异环光追一键部署，异环开光追工具，异环光追工具，异环光追补丁，异环 OptiScaler 一键安装，异环 winmm.dll 一键安装，异环不改注册表光追。
+## Project Purpose
 
-NTE how to enable ray tracing, how to enable ray tracing in NTE, Neverness To Everness how to enable ray tracing, Neverness To Everness no ray tracing option, NTE no ray tracing option, NTE ray tracing option missing, NTE ray tracing not showing, NTE ray tracing fix, NTE ray tracing tool, NTE one-click ray tracing unlock, NTE one-click OptiScaler install, NTE OptiScaler setup, NTE winmm.dll installer, Ananta how to enable ray tracing, Ananta no ray tracing option, Ananta ray tracing unlock.
+The focus of this project is not to be a "Generic Mod Manager," but to turn the specific ray tracing unlock path for *Neverness To Everness* into a reusable process:
 
-## 项目定位
+* Whitelist Issue: The current NTE test version hides ray tracing options based on a GPU model whitelist.
+* Verified Solution: Using OptiScaler DXGI/Streamline to spoof a whitelisted GPU successfully unlocks the in-game options.
+* Safety: Modifying the system-wide GPU registry affects the entire OS and is unsuitable for primary development machines.
+* Local Scope: This tool defaults to writing local proxy files only within the game's Win64 directory and provides manifest-based backups and restoration.
 
-这个项目的重点不是“通用 Mod 管理器”，而是把异环这个具体场景里的光追解锁路径做成可复用流程：
+---
 
-- 异环当前测试版本会按 GPU 型号白名单隐藏光线追踪选项。
-- 当前机器已验证：通过 OptiScaler DXGI/Streamline spoof 成白名单目标后，游戏内光线追踪选项可打开。
-- 直接改系统显卡注册表是整机级影响，不适合主力开发机。
-- 本工具默认只写游戏 `Win64` 目录内的本地代理文件，并提供 manifest 备份恢复。
+## What It Solves
 
-## 能解决什么
+Many RTX 50/40/30 series cards support ray tracing, but the NTE test version hides the "Ray Tracing / Path Tracing" options based on a whitelist. 
 
-部分 RTX 50/40/30 系显卡实际支持光追，但《异环》测试版本会按显卡型号白名单隐藏“光线追踪 / 全景光追”选项。手动改 Windows 显卡注册表是整机级影响，不适合主力开发机。
+This tool uses OptiScaler's DXGI/Streamline GPU spoofing to disguise the GPU name seen by HTGame.exe as a targeted whitelist model. The WebUI currently offers three profiles: Original Configuration, NVIDIA GeForce RTX 4090, and NVIDIA GeForce RTX 5080 Laptop GPU. This method has been verified to unlock the ray tracing settings in-game.
 
-本工具默认使用 OptiScaler 的 DXGI/Streamline GPU spoof，把 `HTGame.exe` 看到的 GPU 名称伪装为所选目标显卡，从而解锁游戏里的光追选项。当前 WebUI 提供三档：本机原配置、`NVIDIA GeForce RTX 4090`、`NVIDIA GeForce RTX 5080 Laptop GPU`。这个方法已经在当前机器上验证：安装后游戏内光线追踪选项可打开。
+---
 
-## 文档导航
+## Document Navigation
 
-第一次使用建议按顺序看：
+For first-time users, it is recommended to read in order:
+1. [Quick Start](docs/01-快速使用.md)
+2. [Principles and Trial Path](docs/02-原理与试错路径.md)
+3. [Backup/Restore and Scope of Changes](docs/03-备份恢复与修改范围.md)
+4. [Release Guide](docs/04-发布指南.md)
+5. [FAQ](docs/05-常见问题.md)
 
-1. [快速使用](docs/01-快速使用.md)
-2. [原理与试错路径](docs/02-原理与试错路径.md)
-3. [备份恢复与修改范围](docs/03-备份恢复与修改范围.md)
-4. [发布指南](docs/04-发布指南.md)
-5. [常见问题](docs/05-常见问题.md)
+---
 
-## 安全边界
+## Security Boundaries
 
-- 不使用 ProcMon、Sysmon、驱动监控或内核抓取工具。
-- 默认不修改 `HKLM\SYSTEM\CurrentControlSet\Enum\PCI` 显卡注册表。
-- 默认只管理游戏目录内这些路径：
-  - `winmm.dll`
-  - `OptiScaler.ini`
-  - `OptiScaler.log`
-  - `OptiScaler\`
-  - 旧方案兼容备份：`dlsstweaks.ini`、`dlsstweaks.log`
-- 每次安装前都会创建 `_nte_rt_backups\<timestamp>\manifest.json`。
-- 恢复时严格按 manifest 操作，避免误删非本工具文件。
+* No intrusive tools: Does not use ProcMon, Sysmon, driver monitors, or kernel hooking tools.
+* No Registry Edits: By default, it does not modify HKLM\SYSTEM\CurrentControlSet\Enum\PCI.
+* Focused Scope: Manages only these files within the game directory:
+  - winmm.dll
+  - OptiScaler.ini
+  - OptiScaler.log
+  - OptiScaler\ folder
+  - Legacy compatibility backups: dlsstweaks.ini, dlsstweaks.log
+* Automated Backups: Creates a _nte_rt_backups\<timestamp>\manifest.json before every installation.
+* Safe Restoration: Restores files strictly according to the manifest to avoid deleting non-tool files.
 
-## 使用
+---
 
-1. 运行 `run.bat`，或双击发布版 `NTERayTracingPanel.exe`。
-2. 页面打开后选择《异环》安装根目录，或直接选择 `Client\WindowsNoEditor\HT\Binaries\Win64`。
-3. 点击“下载/准备 OptiScaler”。
-4. 选择目标显卡 profile：本机原配置、RTX 4090 或 RTX 5080M。
-5. 确认游戏和启动器已关闭。
-6. 点击“备份并安装光追解锁”。
-7. 启动游戏，在画质设置里检查光线追踪选项。
+## Usage Instructions
 
-## 运行与退出
+1. Run run.bat or double-click the release version NTERayTracingPanel.exe.
+2. Once the page opens, select the NTE installation root directory or the specific path: Client\WindowsNoEditor\HT\Binaries\Win64.
+3. Click "Download/Prepare OptiScaler."
+4. Select a target GPU profile: Original, RTX 4090, or RTX 5080M.
+5. Ensure the game and launcher are closed.
+6. Click "Backup and Install Ray Tracing Unlock."
+7. Launch the game and check the Graphics settings for Ray Tracing options.
 
-这个工具分成两层：
+---
 
-- 前端 WebUI：浏览器里的页面，只负责显示状态和发起操作。
-- 后端服务：`NTERayTracingPanel.exe` 或 `python app.py`，负责监听端口、选择文件夹、写入文件、备份恢复。
+## Operation and Exit
 
-所以只关闭网页标签页不会关闭后端服务，`22642` 端口也会继续被占用。需要退出时，在 WebUI 底部点击“退出工具”。如果页面已经关掉，可以重新打开：
+The tool consists of two layers:
+* Frontend WebUI: The browser page for status and commands.
+* Backend Service: NTERayTracingPanel.exe (or python app.py), which listens to the port and performs file operations.
 
-```text
-http://127.0.0.1:22642
-```
+Closing the browser tab will not free up port 22642. To exit, click "Exit Tool" at the bottom of the WebUI. If you already closed the page, navigate back to http://127.0.0.1:22642 to exit, or kill the process in Task Manager.
 
-然后再点击“退出工具”；或者在任务管理器里结束 `NTERayTracingPanel.exe`。
+---
 
-## 恢复
+## Restoration
 
-在页面的“备份与恢复”卡片里选择最近备份，点击恢复。
+In the "Backup & Restore" card on the page, select your most recent backup and click Restore. Alternatively, use the command line:
 
-也可以用命令行恢复：
-
-```powershell
 python app.py --no-browser
-```
 
-然后在 WebUI 里恢复指定备份。
+Then use the WebUI to restore the specific backup.
 
-## 原理
+---
 
-OptiScaler 的 GPU spoof 能改写游戏进程通过 DXGI/Streamline 读取到的显卡描述、VendorId、DeviceId 和显存信息。本工具会按 WebUI 选择生成配置。三档目标显卡：
+## Technical Principles
 
-- 本机原配置：读取当前 NVIDIA 显卡名称和 DeviceId，适合回到本机识别。
-- RTX 4090：`SpoofedGPUName=NVIDIA GeForce RTX 4090`，`SpoofedDeviceId=0x2684`。
-- RTX 5080M：`SpoofedGPUName=NVIDIA GeForce RTX 5080 Laptop GPU`，`SpoofedDeviceId=0x2C59`。
+OptiScaler's GPU spoofing overrides the GPU description, VendorId, DeviceId, and VRAM information that the game process reads via DXGI/Streamline. This tool generates configurations based on your selection:
 
-所有 profile 都会保留这些默认边界：
+* Original: Reads your actual NVIDIA name and DeviceId (for reverting).
+* RTX 4090: SpoofedGPUName=NVIDIA GeForce RTX 4090, SpoofedDeviceId=0x2684.
+* RTX 5080M: SpoofedGPUName=NVIDIA GeForce RTX 5080 Laptop GPU, SpoofedDeviceId=0x2C59.
 
-- `TargetProcessName=HTGame.exe`
-- `SpoofedVendorId=0x10de`
-- `Dxgi=true`
-- `StreamlineSpoofing=true`
-- `Registry=false`
-- `User32=false`
+All profiles maintain these safe defaults:
+* TargetProcessName=HTGame.exe
+* SpoofedVendorId=0x10de
+* Dxgi=true
+* StreamlineSpoofing=true
+* Registry=false
+* User32=false
 
-这和全局注册表改名不同：注册表改名会影响整机，DXGI spoof 只在本地代理 DLL 被 `HTGame.exe` 加载后生效。
+Difference from Registry Hacks: While registry hacks affect the entire system, DXGI spoofing only takes effect when the local proxy DLL is loaded by HTGame.exe.
 
-## 版本路线
+---
 
-见 `CHANGELOG.md`。
+## Core Projects and Credits
 
-## 核心项目与致谢
+* [OptiScaler](https://github.com/optiscaler/OptiScaler): The core source of the GPU spoofing functionality. This panel fetches OptiScaler.dll from official releases and installs it as a winmm.dll proxy.
+* [DLSSTweaks](https://github.com/emoose/DLSSTweaks): A related graphics wrapper tool. This project does not use DLSSTweaks for DLSS scaling but recognizes existing dlsstweaks.ini/log files during backup to avoid overwriting your experimental files.
 
-- [OptiScaler](https://github.com/optiscaler/OptiScaler)：本项目的 GPU spoof 核心来源。面板会从 OptiScaler 官方 GitHub Release 准备 `OptiScaler.dll`，并把它安装为《异环》Win64 目录内的本地 `winmm.dll` 代理。
-- [DLSSTweaks](https://github.com/emoose/DLSSTweaks)：相关图形注入/包装工具。本项目不使用 DLSSTweaks 的 DLSS 比例配置流程，只在备份恢复时识别你之前可能留下的 `dlsstweaks.ini`、`dlsstweaks.log`，避免覆盖旧实验文件。
-
-本项目不是 OptiScaler 本体、不是 DLSSTweaks 分支，也不是 NVIDIA 官方工具；它只是围绕 OptiScaler 的《异环》专用安装、备份、恢复和说明面板。
+This project is not OptiScaler itself, nor a fork of DLSSTweaks, nor an official NVIDIA tool; it is a dedicated installation and management panel for NTE built around OptiScaler.
