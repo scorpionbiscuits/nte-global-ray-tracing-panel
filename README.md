@@ -1,7 +1,9 @@
-# RTX Fix for NTEGlobal
-This is a fork of nte-ray-tracing-panel originally by which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested on NVIDIA RTX 4060.
+# RT Fix for NTE Global
+This is a fork of nte-ray-tracing-panel originally by llg1634 which works only on Chinese version of the game. This fix ensures that the tool works for NTE Global Release. Tested on NVIDIA RTX 4060.
 
-# How to Enable Ray Tracing in NTE: One-Click Ray Tracing Unlock / Deployment Tool
+---
+
+## How to Enable Ray Tracing in NTE: One-Click Ray Tracing Unlock / Deployment Tool
 
 Search Keywords: How to enable ray tracing in NTE, NTE ray tracing fix, NTE path tracing unlock, NTE ray tracing option missing, NTE ray tracing not showing, NTE ray tracing won't open, NTE RTX 5060 no ray tracing, NTE RTX 4060 ray tracing, NTE one-click ray tracing unlock, NTE one-click install, NTE OptiScaler one-click setup, NTE winmm.dll install, NTE unlock ray tracing without registry edits.
 
