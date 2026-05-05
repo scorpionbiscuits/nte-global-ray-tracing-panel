@@ -1,4 +1,6 @@
 # Runtime uses only Python standard library.
 # Optional packaging:
 pyinstaller>=6.0
-
+# Optional: py7zr is used as a fallback extractor for OptiScaler .7z archives
+# if 7zr.exe is not available on the system or fails to download.
+py7zr>=0.20
