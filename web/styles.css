@@ -728,3 +728,46 @@ button.primary {
     font-size: 2.2rem;
   }
 }
+
+#downloadProgress {
+  display: none;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--panel-solid), transparent 20%);
+}
+
+.progress-label {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent), transparent 82%);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.25s ease;
+}
+
+.progress-pct {
+  margin-top: 6px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: right;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
