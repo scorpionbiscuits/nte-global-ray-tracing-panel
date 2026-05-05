@@ -21,28 +21,33 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 
 APP_VERSION = "0.1.6"
-APP_CN_NAME = "异环光追解锁面板"
-APP_FULL_CN_NAME = "异环光线追踪 / 全景光追一键解锁工具"
+APP_CN_NAME = "NTE Ray Tracing Unlock Panel"
+APP_FULL_CN_NAME = "Neverness To Everness Ray Tracing / Path Tracing One-Click Unlock Tool"
 APP_EN_NAME = "NTE Ray Tracing Panel"
 APP_SEARCH_KEYWORDS = [
-    "异环光追解锁",
-    "异环光线追踪一键",
-    "异环全景光追",
-    "异环光追开启",
-    "异环 RTX 5060 开光追",
-    "异环显卡伪装",
-    "异环 OptiScaler",
-    "异环 RTX 4090 spoof",
-    "异环 RTX 5080M spoof",
     "NTE ray tracing unlock",
-    "Neverness To Everness ray tracing",
+    "NTE ray tracing fix",
+    "NTE ray tracing tool",
+    "NTE one-click ray tracing unlock",
+    "NTE one-click OptiScaler install",
+    "NTE no ray tracing option",
+    "NTE ray tracing option missing",
+    "NTE ray tracing not showing",
+    "NTE GPU spoof",
+    "NTE OptiScaler DXGI spoof",
+    "Neverness To Everness ray tracing unlock",
+    "Neverness To Everness ray tracing fix",
+    "Neverness To Everness no ray tracing option",
+    "Ananta ray tracing unlock",
     "Ananta path tracing",
 ]
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 22642
 GITHUB_RELEASE_API = "https://api.github.com/repos/optiscaler/OptiScaler/releases/latest"
-GAME_EXE = "HTGame.exe"  # Chinese / beta client
-GAME_EXE_CANDIDATES = ("HTGame.exe", "NTEGame.exe", "NTEGlobalGame.exe")  # NTEGlobalGame.exe = global PC release
+GAME_EXE = "HTGame.exe"
+GAME_EXE_CANDIDATES = ("HTGame.exe", "NTEGame.exe", "NTEGlobalGame.exe")
+SEVEN_ZIPR_URL = "https://github.com/ip7z/7zip/releases/download/26.01/7zr.exe"
+DEFAULT_GAME_PATH = r"C:\Program Files\Neverness To Everness\Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe"
 
 RUN_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", RUN_DIR))
@@ -61,12 +66,12 @@ BACKUP_DIR_NAME = "_nte_rt_backups"
 
 FALLBACK_LOCAL_PROFILE = {
     "id": "local",
-    "label": "本机原配置",
+    "label": "Current GPU (Local)",
     "gpuName": "NVIDIA GeForce RTX 5060 Laptop GPU",
     "vendorId": "0x10de",
     "deviceId": "0x2d19",
     "vramGb": "auto",
-    "description": "使用当前机器检测到的 NVIDIA 显卡名称和 DeviceId，适合回到本机识别。",
+    "description": "Uses the detected local NVIDIA GPU name and DeviceId. Use this to restore normal GPU identity.",
 }
 
 STATIC_PROFILES = {
@@ -77,7 +82,7 @@ STATIC_PROFILES = {
         "vendorId": "0x10de",
         "deviceId": "0x2684",
         "vramGb": "16",
-        "description": "原先验证成功的白名单目标，桌面 RTX 4090 识别。",
+        "description": "Previously verified whitelist target, desktop RTX 4090 identity.",
     },
     "rtx5080m": {
         "id": "rtx5080m",
@@ -86,10 +91,58 @@ STATIC_PROFILES = {
         "vendorId": "0x10de",
         "deviceId": "0x2C59",
         "vramGb": "16",
-        "description": "移动端 RTX 5080 Laptop GPU 识别，适合继续测试 50 系白名单。",
+        "description": "Mobile RTX 5080 Laptop GPU identity, suitable for testing 50-series whitelist.",
     },
 }
 DEFAULT_PROFILE_ID = "rtx5080m"
+
+
+class DownloadProgress:
+    """Thread-safe download progress state shared between the download thread and SSE stream."""
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.reset()
+
+    def reset(self):
+        with self._lock:
+            self.active = False
+            self.phase = "idle"       # idle | downloading | extracting | done | error
+            self.filename = ""
+            self.downloaded = 0
+            self.total = 0
+            self.error = ""
+
+    def update(self, downloaded: int, total: int):
+        with self._lock:
+            self.downloaded = downloaded
+            self.total = total
+
+    def set_phase(self, phase: str, filename: str = ""):
+        with self._lock:
+            self.phase = phase
+            self.active = phase not in ("idle", "done", "error")
+            if filename:
+                self.filename = filename
+
+    def set_error(self, msg: str):
+        with self._lock:
+            self.phase = "error"
+            self.active = False
+            self.error = msg
+
+    def snapshot(self) -> dict:
+        with self._lock:
+            pct = round(self.downloaded / self.total * 100, 1) if self.total > 0 else 0
+            return {
+                "phase": self.phase,
+                "filename": self.filename,
+                "downloaded": self.downloaded,
+                "total": self.total,
+                "pct": pct,
+                "error": self.error,
+            }
+
+DOWNLOAD_PROGRESS = DownloadProgress()
 
 
 class AppError(Exception):
@@ -132,14 +185,14 @@ def open_browser_safe(url: str) -> None:
 def raise_if_access_denied(exc: OSError, path: str = "") -> None:
     """Re-raise OSError with an actionable message when it is WinError 5."""
     if getattr(exc, "winerror", None) == 5:
-        loc = f"\n路径: {path}" if path else ""
+        loc = f"\nPath: {path}" if path else ""
         raise AppError(
-            f"写入被拒绝 (WinError 5 Access Denied)。{loc}\n\n"
-            "常见原因及解决方法：\n"
-            "① Windows Defender 实时保护拦截了 winmm.dll 写入 —— "
-            "请在 Windows 安全中心 → 病毒和威胁防护 → 排除项 中添加游戏 Win64 目录，然后重试；\n"
-            "② 游戏安装在 C:\\Program Files 内且 UAC 令牌未完全提权 —— "
-            "请右键以管理员身份运行本工具，或将游戏迁移到 Program Files 以外的目录（如 D:\\Games）。",
+            f"Write access denied (WinError 5 Access Denied).{loc}\n\n"
+            "Common causes and fixes:\n"
+            "① Windows Defender real-time protection is blocking the winmm.dll write — "
+            "add the game's Win64 folder to Exclusions in Windows Security → Virus & threat protection → Exclusions, then retry.\n"
+            "② The game is installed under C:\\Program Files and the UAC token is not fully elevated — "
+            "run this tool as Administrator, or move the game outside of Program Files (e.g. D:\\Games).",
             500,
         ) from exc
     raise exc
@@ -162,7 +215,7 @@ def ensure_under(path: Path, base: Path) -> Path:
     resolved = path.resolve()
     root = base.resolve()
     if resolved != root and root not in resolved.parents:
-        raise AppError(f"拒绝操作工作目录外路径: {resolved}", 500)
+        raise AppError(f"Refused to operate on path outside working directory: {resolved}", 500)
     return resolved
 
 
@@ -183,7 +236,7 @@ def run_powershell(script: str, *, timeout: int = 15) -> str:
         timeout=timeout,
     )
     if proc.returncode != 0:
-        raise AppError(proc.stderr.strip() or "PowerShell 命令执行失败。", 500)
+        raise AppError(proc.stderr.strip() or "PowerShell command failed.", 500)
     return proc.stdout.strip()
 
 
@@ -229,7 +282,7 @@ def procmon_filter_state() -> dict:
     return {
         "available": proc.returncode == 0,
         "present": present,
-        "message": "检测到 PROCMON 过滤驱动，建议重启后再启动游戏。" if present else "未检测到 PROCMON 过滤驱动。",
+        "message": "Process Monitor kernel filter driver detected. Reboot before launching the game." if present else "No Process Monitor filter driver detected.",
     }
 
 
@@ -269,7 +322,7 @@ def local_profile_from_adapter(adapters: list[dict] | None = None) -> dict:
     if adapter:
         profile["gpuName"] = adapter.get("Name") or profile["gpuName"]
         profile["deviceId"] = adapter.get("DeviceIdHex") or profile["deviceId"]
-        profile["description"] = f"当前检测到的本机显卡：{profile['gpuName']} / {profile['deviceId']}。"
+        profile["description"] = f"Detected local GPU: {profile['gpuName']} / {profile['deviceId']}."
     return profile
 
 
@@ -287,7 +340,7 @@ def resolve_profile(profile_id: str | None, adapters: list[dict] | None = None) 
         return local_profile_from_adapter(adapters)
     if selected in STATIC_PROFILES:
         return dict(STATIC_PROFILES[selected])
-    raise AppError("目标显卡配置无效。")
+    raise AppError("Invalid GPU spoof profile.")
 
 
 def read_device_registry(pnp_device_id: str) -> dict:
@@ -308,7 +361,7 @@ def read_device_registry(pnp_device_id: str) -> dict:
 
 def expand_user_path(value: str | None) -> Path:
     if not value or not value.strip():
-        raise AppError("请选择或输入游戏路径。")
+        raise AppError("Please select or enter the game path.")
     cleaned = value.strip().strip('"')
     return Path(os.path.expandvars(cleaned)).expanduser()
 
@@ -348,11 +401,11 @@ def limited_find_game(base: Path, limit: int = 160000) -> Path | None:
 def detect_game(path_value: str | None) -> dict:
     base = expand_user_path(path_value)
     if not base.exists():
-        raise AppError("路径不存在。")
+        raise AppError("Path does not exist.")
     exe: Path | None = None
     if base.is_file():
         if base.name.lower() not in {e.lower() for e in GAME_EXE_CANDIDATES}:
-            raise AppError("请选择异环安装根目录、Win64 文件夹，或游戏主程序 (HTGame.exe / NTEGame.exe)。")
+            raise AppError("Please select the NTE install root, the Win64 folder, or the game executable (HTGame.exe / NTEGlobalGame.exe).")
         exe = base
     else:
         for candidate in likely_game_paths(base):
@@ -362,7 +415,7 @@ def detect_game(path_value: str | None) -> dict:
         if exe is None:
             exe = limited_find_game(base)
     if exe is None:
-        raise AppError("没有找到游戏主程序 (HTGame.exe 或 NTEGame.exe)。")
+        raise AppError("Game executable not found (HTGame.exe or NTEGlobalGame.exe).")
     win64 = exe.parent
     return {
         "input": str(base),
@@ -376,8 +429,13 @@ def detect_game(path_value: str | None) -> dict:
 
 def common_game_candidates() -> list[Path]:
     candidates = []
+    # Env override takes highest priority
     if os.environ.get("NTE_GAME_PATH"):
         candidates.append(Path(os.environ["NTE_GAME_PATH"]))
+    # Known default install path for the global PC release — checked first so
+    # most users get instant auto-detection without any drive scan
+    candidates.append(Path(DEFAULT_GAME_PATH))
+    # Fallback: scan all drives for alternative install locations
     for drive in "CDEFGHIJKLMNOPQRSTUVWXYZ":
         for base in (
             f"{drive}:\\Neverness To Everness",
@@ -386,7 +444,7 @@ def common_game_candidates() -> list[Path]:
         ):
             p = Path(base)
             candidates.append(p)
-            candidates.append(p / "NTEGlobal")  # global PC launcher installs here
+            candidates.append(p / "NTEGlobal")
     return candidates
 
 
@@ -405,7 +463,7 @@ def run_folder_dialog() -> str | None:
 Add-Type -AssemblyName System.Windows.Forms
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = '选择异环安装根目录，或选择包含 HTGame.exe / NTEGame.exe 的 Win64 文件夹'
+$dialog.Description = 'Select the NTE install root folder, or the Win64 folder containing HTGame.exe'
 $dialog.ShowNewFolderButton = $false
 $form = New-Object System.Windows.Forms.Form
 $form.TopMost = $true
@@ -421,7 +479,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.
         timeout=120,
     )
     if proc.returncode != 0:
-        raise AppError(proc.stderr.strip() or "文件夹选择器启动失败。", 500)
+        raise AppError(proc.stderr.strip() or "Folder picker failed to launch.", 500)
     selected = proc.stdout.strip()
     return selected or None
 
@@ -433,7 +491,7 @@ def fetch_latest_release() -> dict:
     assets = data.get("assets") or []
     asset = next((item for item in assets if str(item.get("name", "")).lower().endswith(".7z")), None)
     if not asset:
-        raise AppError("OptiScaler 最新 Release 没有找到 .7z 资产。", 502)
+        raise AppError("No .7z asset found in the latest OptiScaler release.", 502)
     return {
         "tag": data.get("tag_name"),
         "name": data.get("name"),
@@ -444,11 +502,21 @@ def fetch_latest_release() -> dict:
     }
 
 
-def download_file(url: str, target: Path) -> None:
+def download_file(url: str, target: Path, *, on_progress: callable = None) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url, headers={"User-Agent": "nte-ray-tracing-panel"})
     with urllib.request.urlopen(request, timeout=120) as response, target.open("wb") as fh:
-        shutil.copyfileobj(response, fh)
+        total = int(response.headers.get("Content-Length") or 0)
+        downloaded = 0
+        chunk_size = 64 * 1024
+        while True:
+            chunk = response.read(chunk_size)
+            if not chunk:
+                break
+            fh.write(chunk)
+            downloaded += len(chunk)
+            if on_progress:
+                on_progress(downloaded, total)
 
 
 def find_optiscaler_stage() -> dict | None:
@@ -468,31 +536,110 @@ def find_optiscaler_stage() -> dict | None:
     return {"dir": str(folder), "dll": str(dll), "ini": str(ini), "tag": folder.name}
 
 
+def seven_zip_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    for exe in ("7z", "7za", "7zr"):
+        found = shutil.which(exe)
+        if found:
+            candidates.append(Path(found))
+    for path in (
+        RESOURCE_DIR / "tools" / "7zr.exe",
+        RUN_DIR / "tools" / "7zr.exe",
+        TOOLS_DIR / "_bin" / "7zr.exe",
+    ):
+        if path.is_file():
+            candidates.append(path)
+    return candidates
+
+
+def ensure_seven_zipr() -> Path:
+    for candidate in seven_zip_candidates():
+        return candidate
+    target = TOOLS_DIR / "_bin" / "7zr.exe"
+    DOWNLOAD_PROGRESS.set_phase("downloading", "7zr.exe")
+    download_file(SEVEN_ZIPR_URL, target, on_progress=DOWNLOAD_PROGRESS.update)
+    if not target.is_file() or target.stat().st_size < 100_000:
+        raise AppError("7zr.exe download failed or produced an invalid file.", 500)
+    return target
+
+
+def extract_with_seven_zip(seven_zip: Path, archive: Path, extract_dir: Path) -> tuple[bool, str]:
+    proc = run_command([str(seven_zip), "x", "-y", f"-o{extract_dir}", str(archive)], timeout=180)
+    if proc.returncode == 0:
+        return True, ""
+    return False, (proc.stderr or proc.stdout or f"{seven_zip.name} failed").strip()
+
+
+def extract_optiscaler_archive(archive: Path, extract_dir: Path) -> None:
+    errors = []
+
+    try:
+        seven_zip = ensure_seven_zipr()
+        ok, error = extract_with_seven_zip(seven_zip, archive, extract_dir)
+        if ok:
+            return
+        errors.append(error)
+    except Exception as exc:
+        errors.append(f"7zr: {exc}")
+
+    try:
+        import py7zr  # type: ignore
+        with py7zr.SevenZipFile(archive, mode="r") as zf:
+            zf.extractall(path=extract_dir)
+        return
+    except ImportError:
+        errors.append("py7zr is not installed")
+    except Exception as exc:
+        errors.append(f"py7zr: {exc}")
+
+    tar = shutil.which("tar")
+    if tar:
+        proc = run_command([tar, "-xf", str(archive), "-C", str(extract_dir)], timeout=180)
+        if proc.returncode == 0:
+            return
+        errors.append((proc.stderr or proc.stdout or "tar failed").strip())
+    else:
+        errors.append("Windows tar.exe was not found")
+
+    detail = "; ".join(item for item in errors if item)
+    raise AppError(
+        "OptiScaler archive extraction failed. Could not extract the .7z archive. " + detail,
+        500,
+    )
+
+
 def ensure_optiscaler(force: bool = False) -> dict:
     existing = find_optiscaler_stage()
     if existing and not force:
         existing["downloaded"] = False
         return existing
-    release = fetch_latest_release()
-    archive = TOOLS_DIR / str(release["assetName"])
-    extract_dir = TOOLS_DIR / str(release["tag"])
-    if force and extract_dir.exists():
-        ensure_under(extract_dir, TOOLS_DIR)
-        shutil.rmtree(extract_dir)
-    if force or not archive.is_file():
-        download_file(str(release["assetUrl"]), archive)
-    extract_dir.mkdir(parents=True, exist_ok=True)
-    tar = shutil.which("tar")
-    if not tar:
-        raise AppError("未找到 Windows tar.exe，无法解压 OptiScaler .7z。", 500)
-    proc = run_command([tar, "-xf", str(archive), "-C", str(extract_dir)], timeout=180)
-    if proc.returncode != 0:
-        raise AppError(proc.stderr.strip() or "OptiScaler 解压失败。", 500)
-    stage = find_optiscaler_stage()
-    if not stage:
-        raise AppError("OptiScaler 已下载但未找到 OptiScaler.dll。", 500)
-    stage.update({"downloaded": True, "release": release, "archive": str(archive)})
-    return stage
+    DOWNLOAD_PROGRESS.reset()
+    DOWNLOAD_PROGRESS.set_phase("idle")
+    try:
+        release = fetch_latest_release()
+        archive = TOOLS_DIR / str(release["assetName"])
+        extract_dir = TOOLS_DIR / str(release["tag"])
+        if force and extract_dir.exists():
+            ensure_under(extract_dir, TOOLS_DIR)
+            shutil.rmtree(extract_dir)
+        if force or not archive.is_file():
+            DOWNLOAD_PROGRESS.set_phase("downloading", release["assetName"])
+            download_file(str(release["assetUrl"]), archive, on_progress=DOWNLOAD_PROGRESS.update)
+        DOWNLOAD_PROGRESS.set_phase("extracting", release["assetName"])
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        extract_optiscaler_archive(archive, extract_dir)
+        stage = find_optiscaler_stage()
+        if not stage:
+            raise AppError("OptiScaler was downloaded but OptiScaler.dll was not found.", 500)
+        stage.update({"downloaded": True, "release": release, "archive": str(archive)})
+        DOWNLOAD_PROGRESS.set_phase("done")
+        return stage
+    except AppError:
+        DOWNLOAD_PROGRESS.set_error("Download or extraction failed.")
+        raise
+    except Exception as exc:
+        DOWNLOAD_PROGRESS.set_error(str(exc))
+        raise
 
 
 def list_backups(win64: Path) -> list[dict]:
@@ -622,8 +769,8 @@ def restore_item(game_dir: Path, backup_dir: Path, record: dict) -> str:
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-        return f"恢复 {rel}"
-    return f"移除 {rel}"
+        return f"Restored {rel}"
+    return f"Removed {rel}"
 
 
 def set_ini_value(lines: list[str], key: str, value: str) -> list[str]:
@@ -711,11 +858,11 @@ def install_spoof(
 ) -> dict:
     mode = mode.lower()
     if mode not in {"dxgi", "full"}:
-        raise AppError("模式无效。")
+        raise AppError("Invalid mode.")
     running = running_processes()
     if running:
         if not close_game:
-            raise AppError("检测到异环或启动器正在运行。请先关闭，或勾选自动关闭后再安装。")
+            raise AppError("NTE or its launcher is still running. Close it first, or enable the auto-close option.")
         close_game_processes()
     detected = detect_game(path_value)
     win64 = Path(detected["win64"])
@@ -745,22 +892,22 @@ def install_spoof(
         manifest["items"].append(backup_item(win64, rel, backup_dir, kind="file"))
     for rel in MANAGED_DIRS:
         manifest["items"].append(backup_item(win64, rel, backup_dir, kind="dir"))
-    manifest["operations"].append("创建安装前备份")
+    manifest["operations"].append("Created pre-install backup")
 
     copy_optiscaler_payload(stage, win64)
-    manifest["operations"].append("写入 winmm.dll OptiScaler 代理")
-    manifest["operations"].append("写入 OptiScaler 依赖目录")
+    manifest["operations"].append("Wrote winmm.dll OptiScaler proxy")
+    manifest["operations"].append("Wrote OptiScaler dependency directory")
     config = build_optiscaler_config(Path(stage["ini"]), mode=mode, target_device_id=target_device_id, profile=profile, exe_name=detected.get("exeName", GAME_EXE))
     try:
         (win64 / "OptiScaler.ini").write_text(config, encoding="ascii", errors="ignore")
     except OSError as exc:
         raise_if_access_denied(exc, str(win64 / "OptiScaler.ini"))
-    manifest["operations"].append(f"写入 OptiScaler.ini GPU spoof 配置: {profile['label']}")
+    manifest["operations"].append(f"Wrote OptiScaler.ini GPU spoof config: {profile['label']}")
 
     (backup_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
         "ok": True,
-        "message": "已备份并安装光追解锁配置。",
+        "message": "Backup created and ray tracing unlock installed successfully.",
         "backup": str(backup_dir),
         "mode": mode,
         "profile": profile,
@@ -773,25 +920,25 @@ def restore_backup(path_value: str, backup_id: str | None, *, close_game: bool =
     running = running_processes()
     if running:
         if not close_game:
-            raise AppError("检测到异环或启动器正在运行。请先关闭，或勾选自动关闭后再恢复。")
+            raise AppError("NTE or its launcher is still running. Close it first, or enable the auto-close option.")
         close_game_processes()
     detected = detect_game(path_value)
     win64 = Path(detected["win64"])
     backups = list_backups(win64)
     if not backups:
-        raise AppError("没有找到可恢复备份。")
+        raise AppError("No backups found to restore.")
     selected_id = backup_id or backups[0]["id"]
     backup_dir = ensure_under(win64 / BACKUP_DIR_NAME / selected_id, win64 / BACKUP_DIR_NAME)
     manifest_path = backup_dir / "manifest.json"
     if not manifest_path.is_file():
-        raise AppError("备份 manifest.json 不存在。")
+        raise AppError("Backup manifest.json not found.")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     operations = []
     for record in manifest.get("items", []):
         operations.append(restore_item(win64, backup_dir, record))
     return {
         "ok": True,
-        "message": f"已恢复备份 {selected_id}。",
+        "message": f"Backup {selected_id} restored successfully.",
         "operations": operations,
         "detected": detect_game(path_value),
     }
@@ -824,6 +971,7 @@ def api_state(path_value: str | None = None) -> dict:
         "optiscaler": find_optiscaler_stage(),
         "commonDetected": common,
         "selectedDetected": selected,
+        "defaultGamePath": DEFAULT_GAME_PATH,
     }
 
 
@@ -857,13 +1005,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             return json.loads(self.rfile.read(length).decode("utf-8"))
         except json.JSONDecodeError as exc:
-            raise AppError("请求 JSON 无效。") from exc
+            raise AppError("Invalid request JSON.") from exc
 
     def handle_error(self, exc: Exception) -> None:
         if isinstance(exc, AppError):
             self.send_json({"ok": False, "error": str(exc)}, exc.status)
         else:
-            self.send_json({"ok": False, "error": f"内部错误: {exc}"}, 500)
+            self.send_json({"ok": False, "error": f"Internal error: {exc}"}, 500)
 
     def do_GET(self) -> None:
         try:
@@ -877,6 +1025,24 @@ class Handler(BaseHTTPRequestHandler):
                 detected = detect_game(query.get("path", [None])[0])
                 log = read_log_summary(Path(detected["win64"]) / "OptiScaler.log")
                 self.send_json({"ok": True, "log": log})
+                return
+            if parsed.path == "/api/download/progress":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Connection", "keep-alive")
+                self.end_headers()
+                try:
+                    while True:
+                        snap = DOWNLOAD_PROGRESS.snapshot()
+                        payload = json.dumps(snap, ensure_ascii=False)
+                        self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                        self.wfile.flush()
+                        if snap["phase"] in ("done", "error", "idle"):
+                            break
+                        time.sleep(0.25)
+                except Exception:
+                    pass
                 return
             rel = unquote(parsed.path.lstrip("/")) or "index.html"
             target = (WEB_DIR / rel).resolve()
@@ -904,7 +1070,27 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "detected": detect_game(data.get("path"))})
                 return
             if parsed.path == "/api/download":
-                self.send_json({"ok": True, "optiscaler": ensure_optiscaler(bool(data.get("force")))})
+                force = bool(data.get("force"))
+                if DOWNLOAD_PROGRESS.active:
+                    self.send_json({"ok": False, "error": "A download is already in progress."}, 409)
+                    return
+                result_box = {}
+                def _run():
+                    try:
+                        result_box["stage"] = ensure_optiscaler(force)
+                    except Exception as exc:
+                        result_box["error"] = str(exc)
+                t = threading.Thread(target=_run, daemon=True)
+                t.start()
+                t.join(timeout=2)  # wait up to 2s in case it resolves instantly (cached)
+                if "stage" in result_box:
+                    self.send_json({"ok": True, "optiscaler": result_box["stage"]})
+                elif "error" in result_box:
+                    self.send_json({"ok": False, "error": result_box["error"]}, 500)
+                else:
+                    # Still running — tell the frontend to poll /api/download/progress
+                    self.send_json({"ok": True, "downloading": True})
+                return
                 return
             if parsed.path == "/api/install":
                 self.send_json(install_spoof(
@@ -923,10 +1109,10 @@ class Handler(BaseHTTPRequestHandler):
                 ))
                 return
             if parsed.path == "/api/shutdown":
-                self.send_json({"ok": True, "message": "后端服务正在退出。"})
+                self.send_json({"ok": True, "message": "Backend is shutting down."})
                 schedule_shutdown(self.server)
                 return
-            raise AppError("未知 API。", 404)
+            raise AppError("Unknown API endpoint.", 404)
         except Exception as exc:
             self.handle_error(exc)
 
