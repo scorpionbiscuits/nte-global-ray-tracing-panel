@@ -4,8 +4,8 @@ A fork of [nte-ray-tracing-panel](https://github.com/llg1634/nte-ray-tracing-pan
 
 Tested and working on **NVIDIA RTX 4060**.
 
-![Screenshot 1](https://i.imgur.com/ZIVUDfD.png)
-![Screenshot 2](https://i.imgur.com/uqRmYmE.jpeg)
+![Screenshot 1](https://i.imgur.com/uqRmYmE.jpeg)
+![Screenshot 2](https://i.imgur.com/ZIVUDfD.png)
 
 > GPU spoofing is done entirely inside the game process via OptiScaler's DXGI/Streamline hooks. The system-wide GPU registry is never touched.
 
