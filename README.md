@@ -76,6 +76,7 @@ run_as_admin.bat
 | Procmon warning in Machine Status | Fully reboot the PC — the Procmon kernel driver stays loaded until you do. |
 | Optiscaler installation issue | Press Exit Tool, close the browser and try again. |
 
+> Please report any isues not on this list [here](https://github.com/scorpionbiscuits/nte-global-ray-tracing-panel/issues). Make sure to describe your issue in full detail.
 ---
 
 ## What Changed From the Original
@@ -89,6 +90,100 @@ run_as_admin.bat
 
 ---
 
+# NTE GPU Feature Classification
+
+> Source: `DefaultDeviceProfiles.ini` — classification by UI feature flags inherited from `BaseProfileName` and per-profile CVars.  
+> Total profiles: 185
+> Please report any discrepancies.
+
+---
+
+## Full RayTracing Enabled GPUs (8 profiles)
+*Lumen, RayTracing, and FullRayTracing are all enabled.*
+
+| | |
+|---|---|
+| NVIDIA GeForce RTX 4080 | NVIDIA GeForce RTX 4090 |
+| NVIDIA GeForce RTX 5070 | NVIDIA GeForce RTX 5070 Laptop GPU |
+| NVIDIA GeForce RTX 5070 Ti | NVIDIA GeForce RTX 5070 Ti Laptop GPU |
+| NVIDIA GeForce RTX 5080 | NVIDIA GeForce RTX 5090 |
+
+---
+
+## Only RayTracing Enabled GPU (1 profile)
+*Lumen and RayTracing enabled, FullRayTracing is not.*
+
+| |
+|---|
+| NVIDIA TITANRTX |
+
+---
+
+## Lumen Enabled GPUs (30 profiles)
+*Lumen enabled, RayTracing and FullRayTracing are not.*
+
+| | | |
+|---|---|---|
+| AMD Radeon RX 6700XT | AMD Radeon RX 6750GRE | AMD Radeon RX 6750XT |
+| AMD Radeon RX 6800 | AMD Radeon RX 6900XT | AMD Radeon RX 6950XT |
+| AMD Radeon RX 7600XT | AMD Radeon RX 7700XT | AMD Radeon RX 7800M |
+| AMD Radeon RX 7800XT | AMD Radeon RX 7900GRE | AMD Radeon RX 7900M |
+| AMD Radeon RX 7900XT | AMD Radeon RX 7900XTX | AMD Radeon RX 9060XT |
+| AMD Radeon RX 9070 | NVIDIA GeForce RTX 2080 Ti | NVIDIA GeForce RTX 3060 Ti |
+| NVIDIA GeForce RTX 3070 | NVIDIA GeForce RTX 3070 Laptop GPU | NVIDIA GeForce RTX 3070 Ti Laptop GPU |
+| NVIDIA GeForce RTX 3080 | NVIDIA GeForce RTX 3090 | NVIDIA GeForce RTX 4060 Ti |
+| NVIDIA GeForce RTX 4070 | NVIDIA GeForce RTX 4070 Ti | NVIDIA GeForce RTX 5060 |
+| NVIDIA GeForce RTX 5060 Ti | NVIDIA GeForce RTX 5060 Ti Laptop GPU | NVIDIA TITANV |
+
+---
+
+## Disabled / No Lumen (146 profiles)
+*No effective Lumen or RayTracing UI flag enabled.*
+
+**AMD**
+
+| | | | |
+|---|---|---|---|
+| Radeon 760M Graphics | Radeon 780M Graphics | Radeon Graphics | Radeon Pro5300M |
+| Radeon Pro5500XT | Radeon Pro5600M | Radeon R9 380 | Radeon R9 390 |
+| Radeon RX 460 | Radeon RX 470 | Radeon RX 480 | Radeon RX 5300M |
+| Radeon RX 5500 | Radeon RX 5500M | Radeon RX 5500XT | Radeon RX 5600 |
+| Radeon RX 5600M | Radeon RX 560 | Radeon RX 560X | Radeon RX 5700 |
+| Radeon RX 5700M | Radeon RX 5700XT | Radeon RX 580 | Radeon RX 590 |
+| Radeon RX 590GME | Radeon RX 6400 | Radeon RX 6500XT | Radeon RX 6600 |
+| Radeon RX 6600M | Radeon RX 6600XT | Radeon RX 6650XT | Radeon RX 6700 |
+| Radeon RX 6700M | Radeon RX 6800M | Radeon RX 6800S | Radeon RX 6800XT |
+| Radeon RX 6802048SP | Radeon RX 7500 | Radeon RX 7600 | Radeon RX 7600M |
+| Radeon RX 7600MXT | Radeon RX 7600S | Radeon RX 7700S | Radeon RX 7900 |
+| Radeon RXVega | Radeon RXVega10 Graphics | Radeon RXVega11 Graphics | Radeon RXVega56 |
+| Radeon RXVega64 | Radeon Vega10 Mobile Graphics | Radeon Vega11 Mobile Graphics | Radeon Vega3 Graphics |
+| Radeon Vega6 Graphics | Radeon Vega8 Graphics | Radeon Vega9 Graphics | Radeon VegaFrontierEdition |
+
+**NVIDIA**
+
+| | | | |
+|---|---|---|---|
+| GeForce GTX 550 Ti | GeForce GTX 645 | GeForce GTX 650 | GeForce GTX 650 Ti |
+| GeForce GTX 650 TiBoost | GeForce GTX 660 | GeForce GTX 660 Ti | GeForce GTX 670 |
+| GeForce GTX 670MX | GeForce GTX 675M | GeForce GTX 675MX | GeForce GTX 680 |
+| GeForce GTX 680MX | GeForce GTX 690 | GeForce GTX 745 | GeForce GTX 750 |
+| GeForce GTX 750 Ti | GeForce GTX 760 | GeForce GTX 760 Ti | GeForce GTX 765M |
+| GeForce GTX 770 | GeForce GTX 775M | GeForce GTX 780 | GeForce GTX 780 Ti |
+| GeForce GTX 850M | GeForce GTX 860M | GeForce GTX 870M | GeForce GTX 880M |
+| GeForce GTX 950 | GeForce GTX 960 | GeForce GTX 960M | GeForce GTX 965M |
+| GeForce GTX 970 | GeForce GTX 970M | GeForce GTX 980 | GeForce GTX 980 Ti |
+| GeForce GTX 980M | GeForce GTX GTXTITAN | GeForce GTX GTXTITANBlack | GeForce GTX GTXTITANZ |
+| GeForce GTX 1050 | GeForce GTX 1050 Ti | GeForce GTX 1060 | GeForce GTX 1060 with Max-Q |
+| GeForce GTX 1630 | GeForce GTX 1650 | GeForce GTX 1650 SUPER | GeForce GTX 1650 Ti |
+| GeForce GTX 1650 TiBoost | GeForce GTX 1650 with Max-Q | GeForce GTX 1660 | GeForce GTX 1660 SUPER |
+| GeForce GTX 1660 Ti | GeForce GTX 1670 Ti | GeForce MX450 | GeForce RTX 1080 |
+| GeForce RTX 1080 Ti | GeForce RTX 2060 | GeForce RTX 2060 SUPER | GeForce RTX 2060 with Max-Q |
+| GeForce RTX 2070 | GeForce RTX 2070 SUPER | GeForce RTX 2070 with Max-Q | GeForce RTX 2080 |
+| GeForce RTX 2080 SUPER | GeForce RTX 2080 Laptop GPU | GeForce RTX 3050 | GeForce RTX 3050 Laptop GPU |
+| GeForce RTX 3060 | GeForce RTX 3060 Laptop GPU | GeForce RTX 4060 | GeForce RTX 4060 Laptop GPU |
+| Quadro | TITANX | TITANXp | |
+
+---
 Search Keywords: How to enable ray tracing in NTE, NTE ray tracing fix, NTE path tracing unlock, NTE ray tracing option missing, NTE ray tracing not showing, NTE ray tracing won't open, NTE RTX 5060 no ray tracing, NTE RTX 4060 ray tracing, NTE one-click ray tracing unlock, NTE one-click install, NTE OptiScaler one-click setup, NTE winmm.dll install, NTE unlock ray tracing without registry edits.
 
 The `NTE Ray Tracing Panel (异环光追一键部署面板)` is a local WebUI tool designed to solve issues like "How to enable ray tracing in NTE" or "Why is the ray tracing option missing?" It automates the preparation of OptiScaler, installs the local `winmm.dll` and `OptiScaler.ini`, and turns the verified GPU spoofing process into an automated, selectable, and reversible one-click workflow.
