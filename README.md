@@ -79,14 +79,13 @@ run_as_admin.bat
 ---
 
 ## What Changed From the Original
-
-- Detection of `NTEGlobalGame.exe` (global release) alongside the original `HTGame.exe`
-- Auto-detection now searches `C:\Program Files\Neverness To Everness\NTEGlobal` and `Program Files (x86)` paths
-- `TargetProcessName` in `OptiScaler.ini` is now set dynamically to whichever exe was actually found
-- Process kill/detect list updated for `NTEGlobalLauncher`, `NTEGlobalBrowser`, `NTEGlobalWebBooster` 
-- WinError 5 handling with actionable error messages instead of a generic crash
-- Browser launch fixed when running as administrator (`explorer.exe` de-escalation)
-- Compiled exe now embeds a UAC manifest (`--uac-admin`) so it self-elevates on launch
+ 
+### Global PC Release Compatibility
+- Added `NTEGlobalGame.exe` and `NTEGame.exe` to the game executable detection candidates alongside the original `HTGame.exe`
+- Default install path now pre-filled as `C:\Program Files\Neverness To Everness\Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe` — the tool auto-detects and pre-populates the path field on startup without any user input in most cases
+- Auto-detection now searches `Program Files\Neverness To Everness`, `Program Files (x86)\Neverness To Everness`, and the `NTEGlobal` subdirectory on every drive, in addition to the original drive-root-only scan
+- Process kill and detection lists updated to include `NTEGlobalLauncher`, `NTEGlobalBrowser`, and `NTEGlobalWebBooster`
+- `TargetProcessName` in `OptiScaler.ini` is now written dynamically from whichever executable was actually found on disk, instead of being hardcoded
 
 ---
 
