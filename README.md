@@ -1,6 +1,6 @@
 # RT Fix for NTE Global
 
-A fork of [nte-ray-tracing-panel](https://github.com/llg1634/nte-ray-tracing-panel) by llg1634, which was originally built for the Chinese client only. This fork patches the tool to work with the **NTE Global PC release** (`NTEGlobalGame.exe`).
+A fork of [nte-ray-tracing-panel](https://github.com/llg1634/nte-ray-tracing-panel) by llg1634, which was originally built for the Chinese client only. This fork patches the tool to work with the **NTE Global PC release**.
 
 Tested and working on **NVIDIA RTX 4060**.
 
