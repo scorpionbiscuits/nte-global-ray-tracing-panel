@@ -33,7 +33,7 @@ function setBusy(button, busy, text) {
   if (!button) return;
   if (busy) {
     button.dataset.oldText = button.textContent;
-    button.textContent = text || "处理中...";
+    button.textContent = text || "Processing...";
     button.disabled = true;
   } else {
     button.textContent = button.dataset.oldText || button.textContent;
@@ -44,7 +44,7 @@ function setBusy(button, busy, text) {
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem("nte-rt-theme", theme);
-  $("#themeToggle").textContent = theme === "dark" ? "深色" : "浅色";
+  $("#themeToggle").textContent = theme === "dark" ? "Dark" : "Light";
 }
 
 function currentMode() {
@@ -56,7 +56,7 @@ function currentProfile() {
 }
 
 function processText(processes) {
-  if (!processes || processes.length === 0) return "未运行";
+  if (!processes || processes.length === 0) return "Not running";
   const names = [...new Set(processes.map((item) => item.ProcessName || item.processName).filter(Boolean))];
   return names.join(", ");
 }
@@ -75,7 +75,7 @@ function setProfileSelection(profileId) {
   const input = document.querySelector(`input[name='profile'][value='${profileId}']`);
   if (input) input.checked = true;
   const selected = state.profiles.find((profile) => profile.id === currentProfile());
-  $("#profileBadge").textContent = selected ? selected.label : "目标显卡";
+  $("#profileBadge").textContent = selected ? selected.label : "Target GPU";
 }
 
 function renderProfiles(profiles, defaultProfile) {
@@ -105,9 +105,9 @@ function renderProfiles(profiles, defaultProfile) {
 
 function updateHero(install) {
   const installed = install?.installed;
-  $("#statusGlyph").textContent = installed ? "已装" : "待装";
-  $("#statusLine").textContent = installed ? "光追解锁配置已安装" : "尚未安装光追解锁配置";
-  $("#installBadge").textContent = installed ? "已安装" : "未安装";
+  $("#statusGlyph").textContent = installed ? "Active" : "Inactive";
+  $("#statusLine").textContent = installed ? "Ray tracing unlock is installed" : "Ray tracing unlock not installed";
+  $("#installBadge").textContent = installed ? "Installed" : "Not installed";
 }
 
 function updateDetected(detected) {
@@ -115,7 +115,7 @@ function updateDetected(detected) {
   if (!detected) return;
   state.path = detected.win64;
   $("#gamePath").value = detected.win64;
-  $("#pathHint").textContent = `HTGame.exe: ${detected.exe}`;
+  $("#pathHint").textContent = `Game executable: ${detected.exe}`;
   updateHero(detected.install);
   renderInstallState(detected.install);
   const installedProfile = findProfileByInstall(detected.install);
@@ -126,11 +126,11 @@ function updateDetected(detected) {
 function renderBackups(backups) {
   const select = $("#backupSelect");
   select.innerHTML = "";
-  $("#backupCount").textContent = `${backups.length} 个备份`;
+  $("#backupCount").textContent = `${backups.length} backup(s)`;
   $("#openBackupBtn").disabled = backups.length === 0;
   if (backups.length === 0) {
     const option = document.createElement("option");
-    option.textContent = "没有备份";
+    option.textContent = "No backups";
     option.value = "";
     select.appendChild(option);
     return;
@@ -146,7 +146,7 @@ function renderBackups(backups) {
 
 function renderInstallState(install) {
   if (!install) {
-    $("#installState").textContent = "未检测。";
+    $("#installState").textContent = "Not detected.";
     return;
   }
   const lines = [
@@ -172,15 +172,21 @@ function updateStateView(data) {
   $("#versionText").textContent = data.version || "0.1.0";
   if (data.name) document.title = `${data.name} / ${data.englishName || "NTE Ray Tracing Panel"}`;
   const gpu = data.nvidia?.[0];
-  $("#gpuName").textContent = gpu ? `${gpu.Name} (${gpu.DeviceIdHex || "unknown"})` : "未检测到 NVIDIA";
-  $("#procmonState").textContent = data.procmon?.present ? "有残留" : "干净";
+  $("#gpuName").textContent = gpu ? `${gpu.Name} (${gpu.DeviceIdHex || "unknown"})` : "No NVIDIA GPU detected";
+  $("#procmonState").textContent = data.procmon?.present ? "Driver present" : "Clean";
   $("#processState").textContent = processText(data.processes || []);
-  $("#optiBadge").textContent = data.optiscaler ? `已准备 ${data.optiscaler.tag}` : "未准备";
+  $("#optiBadge").textContent = data.optiscaler ? `Ready ${data.optiscaler.tag}` : "Not ready";
   if (data.selectedDetected && !data.selectedDetected.error) {
     updateDetected(data.selectedDetected);
   } else if (data.commonDetected) {
     updateDetected(data.commonDetected);
   } else {
+    // No game found yet — pre-fill the default path so the user can see
+    // where the tool will look and just click Detect to confirm
+    if (!$("#gamePath").value.trim() && data.defaultGamePath) {
+      $("#gamePath").value = data.defaultGamePath;
+      $("#pathHint").textContent = "Default install path — click Detect to confirm.";
+    }
     updateHero(null);
   }
 }
@@ -194,14 +200,14 @@ async function refreshState() {
 
 async function detectGame() {
   const button = $("#detectBtn");
-  setBusy(button, true, "检测中...");
+  setBusy(button, true, "Detecting...");
   try {
     const data = await api("/api/detect", {
       method: "POST",
       body: JSON.stringify({ path: $("#gamePath").value.trim() }),
     });
     updateDetected(data.detected);
-    toast("已检测到异环 Win64 目录。");
+    toast("NTE Win64 directory detected.");
   } catch (error) {
     toast(error.message, true);
   } finally {
@@ -211,7 +217,7 @@ async function detectGame() {
 
 async function browseGame() {
   const button = $("#browseBtn");
-  setBusy(button, true, "选择中...");
+  setBusy(button, true, "Selecting...");
   try {
     const data = await api("/api/browse", { method: "POST", body: "{}" });
     if (data.path) {
@@ -227,25 +233,95 @@ async function browseGame() {
 
 async function downloadOpti(force = false) {
   const button = force ? $("#forceDownloadBtn") : $("#downloadBtn");
-  setBusy(button, true, force ? "重新下载中..." : "下载中...");
+  setBusy(button, true, force ? "Re-downloading..." : "Downloading...");
+  showProgress("Connecting...", 0);
   try {
     const data = await api("/api/download", {
       method: "POST",
       body: JSON.stringify({ force }),
     });
-    $("#optiBadge").textContent = `已准备 ${data.optiscaler.tag}`;
-    toast(data.optiscaler.downloaded ? "OptiScaler 已下载并解包。" : "OptiScaler 已准备。");
+    if (!data.downloading) {
+      // Resolved instantly (cached) — no SSE needed
+      hideProgress();
+      $("#optiBadge").textContent = `Ready ${data.optiscaler.tag}`;
+      toast(data.optiscaler.downloaded ? "OptiScaler downloaded and extracted." : "OptiScaler is ready.");
+      await refreshState();
+      return;
+    }
+    // Stream progress via SSE
+    await new Promise((resolve, reject) => {
+      const es = new EventSource("/api/download/progress");
+      es.onmessage = (e) => {
+        try {
+          const snap = JSON.parse(e.data);
+          if (snap.phase === "downloading") {
+            const label = snap.total > 0
+              ? `Downloading ${snap.filename} — ${formatBytes(snap.downloaded)} / ${formatBytes(snap.total)}`
+              : `Downloading ${snap.filename} — ${formatBytes(snap.downloaded)}`;
+            showProgress(label, snap.pct);
+          } else if (snap.phase === "extracting") {
+            showProgress(`Extracting ${snap.filename}...`, 100);
+          } else if (snap.phase === "done") {
+            showProgress("Done!", 100);
+            es.close();
+            resolve();
+          } else if (snap.phase === "error") {
+            es.close();
+            reject(new Error(snap.error || "Download failed."));
+          }
+        } catch (_) {}
+      };
+      es.onerror = () => { es.close(); reject(new Error("Progress stream disconnected.")); };
+    });
+    hideProgress();
     await refreshState();
+    const stage = state.lastState?.optiscaler;
+    if (stage) $("#optiBadge").textContent = `Ready ${stage.tag}`;
+    toast("OptiScaler downloaded and extracted.");
   } catch (error) {
+    hideProgress();
     toast(error.message, true);
   } finally {
     setBusy(button, false);
   }
 }
 
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function showProgress(label, pct) {
+  let bar = $("#downloadProgress");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "downloadProgress";
+    bar.innerHTML = `
+      <div class="progress-label" id="progressLabel"></div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-pct" id="progressPct"></div>
+    `;
+    // Insert after the download buttons' parent card
+    const downloadBtn = $("#downloadBtn");
+    downloadBtn.closest(".card").appendChild(bar);
+  }
+  bar.style.display = "block";
+  $("#progressLabel").textContent = label;
+  $("#progressFill").style.width = `${Math.min(pct, 100)}%`;
+  $("#progressPct").textContent = pct > 0 ? `${pct.toFixed(1)}%` : "";
+}
+
+function hideProgress() {
+  const bar = $("#downloadProgress");
+  if (bar) bar.style.display = "none";
+}
+
 async function installSpoof() {
   const button = $("#installBtn");
-  setBusy(button, true, "安装中...");
+  setBusy(button, true, "Installing...");
   try {
     const data = await api("/api/install", {
       method: "POST",
@@ -257,7 +333,7 @@ async function installSpoof() {
       }),
     });
     updateDetected(data.detected);
-    toast(`安装完成，备份已创建：${data.backup}`);
+    toast(`Installation complete. Backup created: ${data.backup}`);
   } catch (error) {
     toast(error.message, true);
   } finally {
@@ -269,10 +345,10 @@ async function restoreBackup() {
   const button = $("#restoreBtn");
   const backup = $("#backupSelect").value;
   if (!backup) {
-    toast("没有可恢复的备份。", true);
+    toast("No backup selected.", true);
     return;
   }
-  setBusy(button, true, "恢复中...");
+  setBusy(button, true, "Restoring...");
   try {
     const data = await api("/api/restore", {
       method: "POST",
@@ -293,11 +369,11 @@ async function restoreBackup() {
 
 async function refreshLog() {
   const button = $("#logBtn");
-  setBusy(button, true, "读取中...");
+  setBusy(button, true, "Reading...");
   try {
     const path = encodeURIComponent($("#gamePath").value.trim());
     const data = await api(`/api/log?path=${path}`);
-    $("#logView").textContent = data.log.exists ? data.log.tail || "日志为空。" : "尚未生成 OptiScaler.log。";
+    $("#logView").textContent = data.log.exists ? data.log.tail || "Log is empty." : "OptiScaler.log has not been generated yet.";
   } catch (error) {
     toast(error.message, true);
   } finally {
@@ -308,10 +384,10 @@ async function refreshLog() {
 async function shutdown() {
   try {
     await api("/api/shutdown", { method: "POST", body: "{}" });
-    toast("后端服务正在退出。");
-  } catch (error) {
-    toast(error.message, true);
+  } catch (_) {
+    // Server closing mid-response is expected — not an error
   }
+  window.close();
 }
 
 function bindNav() {
@@ -340,7 +416,7 @@ function bindEvents() {
   $("#shutdownBtnTop").addEventListener("click", shutdown);
   $("#openBackupBtn").addEventListener("click", () => {
     const selected = $("#backupSelect").selectedOptions[0];
-    toast(selected?.dataset.path || "没有备份路径。");
+    toast(selected?.dataset.path || "No backup path found.");
   });
 }
 
